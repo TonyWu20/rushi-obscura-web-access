@@ -77,15 +77,15 @@ PATH, so the package is self-contained.
 
 Consumer wiring (ext-flake-authoring.md section 5):
 
-    inputs.rushi-web-access = {
-      url = "github:TonyWu20/rushi-web-access";
+    inputs.rushi-obscura-web-access = {
+      url = "github:TonyWu20/rushi-obscura-web-access";
       flake = true;
     };
 
-    # in the rushi module:
+    # in the rushi module (input name maps to the camelCase binding):
     rushi.external_tools = [
-      webAccessFlake.packages.${system}."web-fetch"
-      webAccessFlake.packages.${system}."web-search"
+      rushiObscuraWebAccess.packages.${system}."web-fetch"
+      rushiObscuraWebAccess.packages.${system}."web-search"
     ];
 
 ## Notes
