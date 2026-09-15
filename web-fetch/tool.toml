@@ -1,0 +1,29 @@
+[tool]
+description = "Fetch a web page and return its content as text (JavaScript is executed first). Use markdown format for model-readable output, links for URL+title pairs."
+command = "web_fetch"
+args = []
+timeout_ms = 60000
+
+[tool.schema]
+type = "object"
+required = ["url"]
+
+[tool.schema.properties]
+[tool.schema.properties.url]
+type = "string"
+description = "Page URL to fetch (http:// or https://)."
+
+[tool.schema.properties.format]
+type = "string"
+description = "Dump format: text, markdown, links, or html."
+default = "text"
+
+[tool.schema.properties.max_lines]
+type = "integer"
+description = "Max lines of content to return."
+default = 300
+
+[tool.schema.properties.wait_s]
+type = "integer"
+description = "Extra seconds to wait for the page to settle (JS-heavy pages)."
+default = 0

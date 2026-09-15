@@ -1,0 +1,18 @@
+# The web_search rushi tool: search the web through DuckDuckGo's HTML
+# endpoint, rendered by the obscura headless browser. No API keys.
+# Standalone crate; the shared plumbing is web-common.
+[package]
+name = "web_search"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[[bin]]
+name = "web_search"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+web-common = { path = "../web-common" }

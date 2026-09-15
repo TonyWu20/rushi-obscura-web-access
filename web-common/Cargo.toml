@@ -1,0 +1,16 @@
+# web-common — shared plumbing for the web_fetch / web_search tools.
+# Not a rushi tool; it is built transitively by the tool crates.
+[package]
+name = "web-common"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[lib]
+name = "web_common"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"

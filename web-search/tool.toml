@@ -1,0 +1,23 @@
+[tool]
+description = "Search the web (DuckDuckGo, no API key). Returns structured results: title, url, domain, snippet."
+command = "web_search"
+args = []
+timeout_ms = 60000
+
+[tool.schema]
+type = "object"
+required = ["query"]
+
+[tool.schema.properties]
+[tool.schema.properties.query]
+type = "string"
+description = "Search query."
+
+[tool.schema.properties.site]
+type = "string"
+description = "Optional site filter, e.g. github.com or the shortcuts github / wikipedia."
+
+[tool.schema.properties.max_results]
+type = "integer"
+description = "Max results to return."
+default = 8

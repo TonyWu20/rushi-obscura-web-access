@@ -1,0 +1,18 @@
+# The web_fetch rushi tool: fetch a page through the obscura headless
+# browser (JS executed) and return capped plain text / markdown /
+# links / html. Standalone crate; the shared plumbing is web-common.
+[package]
+name = "web_fetch"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[[bin]]
+name = "web_fetch"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+web-common = { path = "../web-common" }
