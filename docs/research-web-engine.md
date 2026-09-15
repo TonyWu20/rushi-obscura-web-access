@@ -221,23 +221,70 @@ Search recommendation: ship one web_search tool (DDG html endpoint,
 obscura links-dump parse, uddg resolution, optional site filter) plus
 web_fetch (obscura). Leave Brave and Reddit out of v1.
 
-## Tool shape (for the follow-up build)
+## Tool shape (built)
 
-Two tools, mirroring pi-lynx's core:
+Two Rust tool crates in this repo, each a standalone cargo package
+with a tool.toml manifest (the single-repo ext pattern, mode B of
+ext-flake-authoring.md):
 
-- web_fetch {url, format: text|markdown|links, max_lines, wait_s}
-  runs obscura fetch on the URL with the chosen dump format and an
-  optional wait, under a 30 s timeout.
+- web_fetch {url, format: text|markdown|links|html, max_lines, wait_s}
+  shells out to obscura fetch with the chosen dump format, caps the
+  output, and returns {text, truncated, total_lines}.
 - web_search {query, site, max_results}
-  builds an html.duckduckgo.com URL (optionally with site filter),
-  runs obscura fetch with the links dump, groups anchors per uddg
-  target into title / domain / snippet, decodes uddg redirects, and
-  caps at max_results. The pi-lynx resolveDdgRedirect logic ports one
-  to one.
+  builds the html.duckduckgo.com URL (site filter, with github and
+  wikipedia shortcuts), runs obscura with the links dump, groups the
+  anchors per decoded uddg target into title / domain / snippet, and
+  caps at max_results. A state file keeps a 3 s spacing between
+  calls (one-shot tool, so there is no process memory to throttle).
 
-Prototypes of this contract live in tools/web_obscura/, tools/web_lynx/
-and tools/web_search/ of this repo (bash scripts plus tool.toml). All
-three pass the rushi ABI tests on 2026-09-16, including the uddg
-grouping parse and the state-file throttle. The production port should
-follow the rushi-exts Rust-crate tool pattern: one crate per tool, a
-tool.toml manifest, and obscura on the tool PATH.
+Shared plumbing (obscura discovery, spawn, JSON I/O, uddg
+resolution) lives in the web-common path-dep crate. JSON in/out goes
+through serde_json directly, so no external jq is needed.
+
+The ext flake (flake.nix) builds both crates, builds nixpkgs obscura
+with the render build feature via overrideAttrs (PNG screenshots, for
+a future vision tool result), and bundles the obscura binary next to
+each tool binary ($out/<tool>/bin/obscura). The tool looks for
+obscura in its own exe dir before PATH, so the Nix-built package is
+self-contained. The kernel route resolves the tool binary from the
+tool's own bin/ dir, so no PATH wiring is needed on the consumer
+side.
+
+Both crates pass the rushi ABI tests (JSON in, JSON out, stderr plus
+non-zero exit on failure) on 2026-09-16, including the uddg grouping
+parse and the state-file throttle.
+
+## Nix packaging (ext flake)
+
+The ext flake (flake.nix, Mode B) builds both tool crates, the
+nixpkgs obscura with the `render` build feature (overrideAttrs adds
+`--features render` to cargoBuildFlags; screenshots verified on the
+Nix-built binary: 1280x720 PNG via `--screenshot`), and a bundle
+derivation that re-wraps obscura into a plain $out/bin/obscura.
+Each tool package is the P1 layout ($out/<tool>/tool.toml +
+bin/<tool> + bin/obscura).
+
+Nixpkgs quirks hit on the pinned rev (8ce4ef6..., noted so the
+kernel guide can absorb them):
+
+- structuredAttrs: listing the nixpkgs obscura package (a
+  structuredAttrs attrset) in another derivation's nativeBuildInputs
+  or buildEnv.paths fails with `error: attribute 'name' missing`
+  in derivationStrict. Plain mkDerivation/buildRustPackage outputs
+  list fine. Workaround: the obscuraBundle re-wrap.
+- mkDerivation name computation: this rev only synthesizes `name`
+  when `name` is passed or when BOTH pname and version are present
+  (make-derivation.nix: `${if (attrs ? name || (attrs ? pname &&
+  attrs ? version)) then "name" else null}`). The guide's
+  wrapAsTool skeleton (pname only) fails; add version = "0.1.0".
+- stdenv requires a source: bare-copy mkDerivations need a `src`
+  (placeholder via writeTextFile) or unpackPhase dies with "variable
+  $src or $srcs should point to the source".
+- intra-repo path deps: buildCrate uses src = "${self}" (whole
+  repo, as goal-app does) plus buildAndTestSubdir/cargoRoot, so
+  web-common resolves in the sandbox.
+
+The kernel route (bin/route/src/main.rs) resolves a tool binary
+from the tool's own bin/ dir, and mk-rushi.nix copies external
+tools additively, so the bundled obscura survives into the rushi
+package: no PATH wiring on the consumer side.

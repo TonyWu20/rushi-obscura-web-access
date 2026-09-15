@@ -66,14 +66,21 @@
               ++ [ "--features" "render" ];
           });
 
-          # The obscura package is a structuredAttrs attrset, which
-          # breaks when listed in another derivation's nativeBuildInputs
-          # ("attribute 'name' missing" in derivationStrict). So the
-          # tool wrapper references its store path directly: the
-          # interpolation adds obscura to the wrapper's referred paths,
-          # and the copy lands next to the tool binary.
+          # Re-wrap the (structuredAttrs) obscura package into a plain
+          # bundle derivation: $out/bin/obscura. A structuredAttrs
+          # attrset breaks when listed in another derivation's
+          # nativeBuildInputs, so the tool wrapper depends on this
+          # plain bundle and copies its bin/ next to the tool binary.
           obscuraBundle = pkgs.stdenv.mkDerivation {
             pname = "obscura-bundle";
+            version = "0";
+            # this derivation only copies a built binary; stdenv still
+            # wants a source for unpackPhase, so use a placeholder
+            src = pkgs.writeTextFile {
+              name = "obscura-bundle-src";
+              destination = "/placeholder";
+              text = "";
+            };
             installPhase = ''
               mkdir -p $out/bin
               cp ${obscura}/bin/obscura $out/bin/obscura
@@ -81,14 +88,17 @@
           };
 
           # Build one standalone cargo crate from a subpath of this
-          # flake's source tree. Intra-repo path deps (web-common)
-          # resolve because src keeps the repo layout intact. The
-          # output binary name comes from the crate's [[bin]] name.
+          # flake's source tree. The whole repo is the source so the
+          # intra-repo path dep (web-common) resolves in the sandbox;
+          # buildAndTestSubdir cd's into the crate before cargo runs.
+          # The output binary name comes from the crate's [[bin]] name.
           buildCrate = { crateDir, crateName }:
             pkgs.rustPlatform.buildRustPackage {
               pname = crateName;
               version = "0.1.0";
-              src = "${self}/${crateDir}";
+              src = "${self}";
+              buildAndTestSubdir = crateDir;
+              cargoRoot = crateDir;
               nativeBuildInputs = [ rustToolchain ];
               cargoLock = { lockFile = "${self}/${crateDir}/Cargo.lock"; };
               doCheck = false;
@@ -101,6 +111,12 @@
           wrapAsTool = { name, toolToml, built }:
             pkgs.stdenv.mkDerivation {
               pname = "${name}-tool";
+              version = "0.1.0";
+              src = pkgs.writeTextFile {
+                name = "${name}-tool-src";
+                destination = "/placeholder";
+                text = "";
+              };
               nativeBuildInputs = [ built obscuraBundle ];
               installPhase = ''
                 mkdir -p $out/${name}/bin
