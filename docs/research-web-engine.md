@@ -288,3 +288,9 @@ The kernel route (bin/route/src/main.rs) resolves a tool binary
 from the tool's own bin/ dir, and mk-rushi.nix copies external
 tools additively, so the bundled obscura survives into the rushi
 package: no PATH wiring on the consumer side.
+
+## Feedback filed
+
+The nixpkgs quirks above are filed as
+[TonyWu20/rushi#8](https://github.com/TonyWu20/rushi/issues/8),
+suggesting the ext-flake-authoring skeleton be updated.
