@@ -124,6 +124,11 @@
                 cp -rL ${obscuraBundle}/bin/. $out/${name}/bin/
                 cp ${toolToml} $out/${name}/tool.toml
               '';
+              # meta.rushi.entry (rushi#13): the tool entry dir this
+              # package provides. lib.mkRushi reads it at eval time to
+              # derive the consumer's [paths] extension_tool_paths
+              # (declare-once).
+              meta = { rushi = { entry = name; }; };
             };
         in
         let
